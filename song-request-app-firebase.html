@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>ขอเพลง 🎶</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<style>
+  :root{
+    --bg:#05060F;
+    --surface:#121B45;
+    --surface-2:#182459;
+    --blue:#3E63FF;
+    --gold:#F5CB2E;
+    --red:#E5484D;
+    --text:#F6F8FF;
+    --muted:#8C9AC9;
+    --border:rgba(246,248,255,0.14);
+    --danger:#FF6B6B;
+    --good:#5FD8A6;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(245,203,46,0.08), transparent 45%),
+      radial-gradient(circle at 85% 6%, rgba(62,99,255,0.22), transparent 42%),
+      linear-gradient(180deg, #182459 0%, #0A1130 30%, #05060F 70%);
+    background-attachment:fixed;
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .display{font-family:Georgia,'Iowan Old Style','Palatino Linotype','Times New Roman',serif;}
+  .mono{font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;}
+
+  #root{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+
+  .topbar{
+    padding:22px 20px 14px;
+    display:flex;align-items:baseline;justify-content:space-between;
+    border-bottom:1px solid var(--border);
+  }
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:600;}
+  .brand .name{font-size:22px;font-weight:700;}
+  .brand .name span.emoji{margin-right:6px;}
+
+  main{flex:1;padding:22px 20px 40px;}
+  footer{padding:16px 20px 26px;text-align:center;}
+  footer a{color:var(--muted);font-size:12.5px;text-decoration:none;border-bottom:1px dotted var(--muted);}
+  footer a:hover{color:var(--text);}
+
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:7px;font-weight:600;}
+  .field input[type=text],
+  .field input[type=number],
+  .field input[type=password],
+  .field textarea{
+    width:100%;
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:10px;
+    padding:13px 14px;
+    font-size:15.5px;
+    font-family:inherit;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  .field textarea{resize:vertical;min-height:72px;}
+  .field input:focus,.field textarea:focus{border-color:var(--gold);}
+  .field .hint{font-size:12px;color:var(--muted);margin-top:6px;}
+  .field .error{font-size:12.5px;color:var(--danger);margin-top:6px;font-weight:600;}
+
+  .quick-amounts{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap;}
+  .quick-amounts button{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:8px 14px;
+    border-radius:999px;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .quick-amounts button:hover{border-color:var(--gold);color:var(--gold);}
+
+  .btn{
+    display:block;width:100%;
+    background:var(--gold);
+    color:#1a1409;
+    border:none;
+    padding:15px 18px;
+    border-radius:12px;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    text-align:center;
+  }
+  .btn:hover{filter:brightness(1.06);}
+  .btn.secondary{
+    background:transparent;
+    color:var(--text);
+    border:1px solid var(--border);
+  }
+  .btn.pink{background:var(--blue);color:#F6F8FF;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  .hero{margin-bottom:26px;}
+  .hero .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);font-weight:700;margin-bottom:8px;}
+  .hero h1{font-size:28px;line-height:1.25;margin:0 0 8px;}
+  .hero p{color:var(--muted);font-size:14.5px;margin:0;line-height:1.55;}
+
+  .qr-wrap{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:26px 20px;
+    text-align:center;
+    margin-bottom:20px;
+  }
+  .qr-wrap canvas{border-radius:12px;background:#F6F8FF;padding:10px;}
+  .qr-amount{font-size:34px;font-weight:800;margin:14px 0 2px;}
+  .qr-amount .baht{font-size:16px;color:var(--muted);font-weight:600;}
+  .qr-caption{color:var(--muted);font-size:13px;margin-bottom:2px;}
+
+  .summary-card{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:20px;
+    font-size:14px;
+    line-height:1.7;
+  }
+  .summary-card b{color:var(--gold);}
+
+  .done-screen{text-align:center;padding:30px 10px;}
+  .done-screen .big-emoji{font-size:52px;margin-bottom:12px;}
+  .done-screen h2{margin:0 0 8px;font-size:22px;}
+  .done-screen p{color:var(--muted);font-size:14.5px;margin:0 0 24px;}
+
+  /* ticket stub — signature element for the staff queue */
+  .queue-list{display:flex;flex-direction:column;gap:22px;}
+  .ticket{
+    position:relative;
+    background:var(--surface);
+    border-radius:14px;
+    padding:18px 20px;
+    border:1px solid var(--border);
+  }
+  .ticket::before,.ticket::after{
+    content:'';position:absolute;width:22px;height:22px;
+    background:var(--bg);border-radius:50%;top:50%;transform:translateY(-50%);
+  }
+  .ticket::before{left:-11px;}
+  .ticket::after{right:-11px;}
+  .ticket .queue-no{
+    position:absolute;top:-11px;left:20px;
+    background:var(--gold);color:#1a1409;
+    font-size:11.5px;font-weight:800;
+    padding:3px 10px;border-radius:999px;
+  }
+  .ticket .song{font-size:23px;font-weight:800;margin:8px 0 2px;line-height:1.25;}
+  .ticket .artist{color:var(--gold);font-size:14.5px;font-weight:600;margin-bottom:12px;}
+  .ticket .divider{border-top:2px dashed var(--border);margin:12px 0;}
+  .ticket .meta-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;color:var(--muted);}
+  .ticket .from{color:var(--text);font-weight:600;}
+  .ticket .tip-badge{
+    background:rgba(229,72,77,0.14);color:var(--red);
+    font-weight:800;padding:4px 10px;border-radius:999px;font-size:12.5px;white-space:nowrap;
+  }
+  .ticket .msg{font-size:13px;color:var(--muted);font-style:italic;margin-top:10px;line-height:1.5;}
+  .ticket .actions{margin-top:14px;display:flex;gap:8px;}
+  .ticket .actions button{
+    flex:1;padding:9px;border-radius:9px;font-size:12.5px;font-weight:700;
+    border:1px solid var(--border);background:var(--surface-2);color:var(--text);cursor:pointer;
+  }
+  .ticket .actions button:hover{border-color:var(--good);color:var(--good);}
+  .ticket .time{font-size:11px;color:var(--muted);}
+
+  .empty-state{
+    text-align:center;padding:50px 20px;color:var(--muted);
+    border:1px dashed var(--border);border-radius:14px;
+  }
+  .empty-state .big{font-size:34px;margin-bottom:10px;}
+
+  .staff-topline{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+  .staff-topline .venue{font-size:13px;color:var(--muted);}
+  .staff-topline .venue b{color:var(--text);}
+  .link-btn{background:none;border:none;color:var(--muted);font-size:12.5px;text-decoration:underline dotted;cursor:pointer;padding:0;}
+  .link-btn:hover{color:var(--text);}
+
+  .live-dot{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--surface-2);border:1px solid var(--border);color:var(--muted);
+    padding:8px 12px;border-radius:999px;font-size:12.5px;margin-bottom:18px;
+  }
+  .live-dot .dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 rgba(95,216,166,.6);animation:pulse 2s infinite;}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(95,216,166,.5);}
+    70%{box-shadow:0 0 0 7px rgba(95,216,166,0);}
+    100%{box-shadow:0 0 0 0 rgba(95,216,166,0);}
+  }
+
+  .banner{
+    background:rgba(255,111,111,0.1);border:1px solid rgba(255,111,111,0.3);
+    color:var(--danger);padding:12px 14px;border-radius:10px;font-size:13.5px;margin-bottom:18px;
+  }
+  .banner.note{background:rgba(245,185,66,0.08);border-color:rgba(245,185,66,0.3);color:var(--gold);}
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="topbar">
+    <div class="brand">
+      <div class="eyebrow">Live Song Request</div>
+      <div class="name" id="brand-name"><span class="emoji">🎶</span>ขอเพลง</div>
+    </div>
+  </div>
+  <main id="view"></main>
+  <footer id="footer"></footer>
+</div>
+
+<script type="module">
+  // ============================================================
+  // FIREBASE SETUP — แก้ตรงนี้ก่อนใช้งานจริง
+  // 1) สร้างโปรเจกต์ที่ https://console.firebase.google.com/
+  // 2) เปิด Firestore Database (Build → Firestore Database → Create database)
+  // 3) Project settings → General → Your apps → เพิ่มเว็บแอป (</>) แล้วคัดลอกค่าด้านล่างมาวาง
+  // 4) ตั้งค่า Firestore Rules ตามที่แนบไว้ในคำอธิบาย
+  // ============================================================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import {
+    getFirestore, doc, getDoc, setDoc,
+    collection, addDoc, deleteDoc, onSnapshot, query, orderBy
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCExL6ehKWPssFz7-TNk8vHnqdiaPaFsVY",
+    authDomain: "web-kor-pleng.firebaseapp.com",
+    databaseURL: "https://web-kor-pleng-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "web-kor-pleng",
+    storageBucket: "web-kor-pleng.firebasestorage.app",
+    messagingSenderId: "1036905898881",
+    appId: "1:1036905898881:web:2715741ac4da2504eafe80",
+    measurementId: "G-83L88NW09D"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getFirestore(fbApp);
+
+  // ---------- Firestore helpers ----------
+  async function loadSettings(){
+    try{
+      const snap = await getDoc(doc(db, 'meta', 'settings'));
+      return snap.exists() ? snap.data() : null;
+    }catch(e){ console.error('loadSettings error:', e); return null; }
+  }
+  async function saveSettings(obj){
+    await setDoc(doc(db, 'meta', 'settings'), obj);
+  }
+  async function addRequest(item){
+    await addDoc(collection(db, 'requests'), item);
+  }
+  async function deleteRequest(id){
+    await deleteDoc(doc(db, 'requests', id));
+  }
+  function subscribeRequests(callback){
+    const q = query(collection(db, 'requests'), orderBy('ts', 'asc'));
+    return onSnapshot(q, function(snapshot){
+      const list = [];
+      snapshot.forEach(function(d){ list.push(Object.assign({ id: d.id }, d.data())); });
+      callback(list);
+    }, function(err){ console.error('subscribeRequests error:', err); });
+  }
+
+  // ---------- app state ----------
+  var state = {
+    settings: null,
+    queue: [],
+    view: 'loading',       // loading | customer | staffLogin | staffSetup | staffQueue
+    staffUnlocked: false,
+    formStep: 'form',       // form | pay | done
+    form: { name:'', song:'', artist:'', message:'', tip:'' },
+    payload: null,
+    unsub: null
+  };
+
+  // ---------- utils ----------
+  function esc(str){
+    var d = document.createElement('div');
+    d.textContent = str == null ? '' : String(str);
+    return d.innerHTML;
+  }
+  function fmtTime(ts){
+    var d = new Date(ts);
+    return d.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+  }
+
+  // ---------- PromptPay QR payload (EMV / Thai QR Payment spec) ----------
+  function tlv(tag, value){
+    var len = String(value.length).padStart(2, '0');
+    return tag + len + value;
+  }
+  function formatPromptPayTarget(input){
+    var digits = String(input).replace(/\D/g, '');
+    if (digits.length === 13){
+      return tlv('02', digits); // national ID / e-wallet
+    }
+    var phone = digits;
+    if (phone.length === 10 && phone.charAt(0) === '0'){
+      phone = phone.slice(1);
+    }
+    if (phone.length === 9){
+      return tlv('01', '0066' + phone);
+    }
+    throw new Error('รูปแบบเบอร์โทรศัพท์หรือเลขบัตรประชาชนไม่ถูกต้อง');
+  }
+  function crc16ccitt(str){
+    var crc = 0xFFFF;
+    for (var i=0;i<str.length;i++){
+      crc ^= (str.charCodeAt(i) << 8);
+      for (var j=0;j<8;j++){
+        if (crc & 0x8000){ crc = ((crc << 1) ^ 0x1021) & 0xFFFF; }
+        else { crc = (crc << 1) & 0xFFFF; }
+      }
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
+  }
+  function buildPromptPayPayload(promptpayId, amount){
+    var target = formatPromptPayTarget(promptpayId);
+    var payload = '';
+    payload += tlv('00', '01');
+    payload += tlv('01', '12');
+    payload += tlv('29', tlv('00', 'A000000677010111') + target);
+    payload += tlv('53', '764');
+    payload += tlv('54', amount.toFixed(2));
+    payload += tlv('58', 'TH');
+    payload += '6304';
+    payload += crc16ccitt(payload);
+    return payload;
+  }
+
+  // ---------- render ----------
+  var viewEl = document.getElementById('view');
+  var footerEl = document.getElementById('footer');
+  var brandNameEl = document.getElementById('brand-name');
+
+  function render(){
+    if (state.settings && state.settings.venueName){
+      brandNameEl.innerHTML = '<span class="emoji">🎶</span>' + esc(state.settings.venueName);
+    }
+
+    if (state.view === 'loading'){
+      viewEl.innerHTML = '<p style="color:var(--muted);text-align:center;padding:60px 0;">กำลังโหลด…</p>';
+      footerEl.innerHTML = '';
+      return;
+    }
+
+    if (state.view === 'customer'){ renderCustomer(); return; }
+    if (state.view === 'staffLogin'){ renderStaffLogin(); return; }
+    if (state.view === 'staffSetup'){ renderStaffSetup(); return; }
+    if (state.view === 'staffQueue'){ renderStaffQueue(); return; }
+  }
+
+  function renderCustomer(){
+    footerEl.innerHTML = '<a href="#staff" id="staff-link">สำหรับเจ้าของร้าน / วงดนตรี</a>';
+    document.getElementById('staff-link').onclick = function(){ goStaff(); };
+
+    if (!state.settings || !state.settings.promptpayId){
+      viewEl.innerHTML =
+        '<div class="hero"><div class="eyebrow">ยังไม่พร้อมใช้งาน</div>' +
+        '<h1>ร้าน/วงนี้ยังไม่ได้ตั้งค่าการรับเพลง</h1>' +
+        '<p>โปรดแจ้งให้เจ้าของร้านหรือวงดนตรีตั้งค่า PromptPay ก่อน จึงจะเริ่มขอเพลงได้</p></div>';
+      return;
+    }
+
+    if (state.formStep === 'form'){
+      var f = state.form;
+      viewEl.innerHTML =
+        '<div class="hero">' +
+          '<div class="eyebrow">Request a Song</div>' +
+          '<h1>ขอเพลงที่อยากฟัง 🎧</h1>' +
+          '<p>กรอกข้อมูล ระบุจำนวนทิป แล้วสแกนจ่ายผ่าน PromptPay</p>' +
+        '</div>' +
+        '<div class="field"><label>1. ชื่อคุณ</label>' +
+          '<input type="text" id="f-name" maxlength="40" value="'+esc(f.name)+'" placeholder="เช่น ปลา, คุณเอ"></div>' +
+        '<div class="field"><label>2. ชื่อเพลง</label>' +
+          '<input type="text" id="f-song" maxlength="80" value="'+esc(f.song)+'" placeholder="เช่น คนที่คุณก็รู้ว่าใคร"></div>' +
+        '<div class="field"><label>3. ศิลปิน</label>' +
+          '<input type="text" id="f-artist" maxlength="60" value="'+esc(f.artist)+'" placeholder="เช่น พาราด็อกซ์"></div>' +
+        '<div class="field"><label>4. ข้อความถึงนักดนตรี (ถ้ามี)</label>' +
+          '<textarea id="f-message" maxlength="200" placeholder="อยากบอกอะไรกับนักดนตรีไหม?">'+esc(f.message)+'</textarea></div>' +
+        '<div class="field"><label>5. จำนวนทิป (ขั้นต่ำ 5 บาท)</label>' +
+          '<input type="number" id="f-tip" min="5" step="1" value="'+esc(f.tip)+'" placeholder="เช่น 20">' +
+          '<div class="quick-amounts">' +
+            [20,50,100,200].map(function(a){return '<button type="button" data-amt="'+a+'">'+a+' ฿</button>';}).join('') +
+          '</div>' +
+          '<div class="hint" id="tip-error"></div>' +
+        '</div>' +
+        '<button class="btn" id="go-pay">สร้าง QR เพื่อจ่ายเงิน →</button>';
+
+      ['f-name','f-song','f-artist','f-message','f-tip'].forEach(function(id){
+        document.getElementById(id).addEventListener('input', function(e){
+          var key = id.replace('f-','');
+          state.form[key] = e.target.value;
+        });
+      });
+      Array.prototype.forEach.call(document.querySelectorAll('.quick-amounts button'), function(btn){
+        btn.onclick = function(){
+          state.form.tip = btn.getAttribute('data-amt');
+          document.getElementById('f-tip').value = state.form.tip;
+        };
+      });
+      document.getElementById('go-pay').onclick = function(){
+        var f = state.form;
+        var errEl = document.getElementById('tip-error');
+        errEl.textContent = '';
+        errEl.className = 'hint';
+        if (!f.name.trim() || !f.song.trim() || !f.artist.trim()){
+          errEl.textContent = 'กรุณากรอกชื่อคุณ ชื่อเพลง และศิลปินให้ครบ';
+          errEl.className = 'error';
+          return;
+        }
+        var tip = parseFloat(f.tip);
+        if (!tip || isNaN(tip) || tip < 5){
+          errEl.textContent = 'จำนวนทิปขั้นต่ำ 5 บาท';
+          errEl.className = 'error';
+          return;
+        }
+        f.tip = tip;
+        try{
+          state.payload = buildPromptPayPayload(state.settings.promptpayId, tip);
+        }catch(e){
+          errEl.textContent = 'เกิดข้อผิดพลาดในการสร้าง QR: ' + e.message;
+          errEl.className = 'error';
+          return;
+        }
+        state.formStep = 'pay';
+        render();
+      };
+      return;
+    }
+
+    if (state.formStep === 'pay'){
+      var f2 = state.form;
+      viewEl.innerHTML =
+        '<div class="hero"><div class="eyebrow">Step 2</div><h1>สแกนจ่ายเงิน</h1>' +
+        '<p>สแกน QR ด้วยแอปธนาคารใดก็ได้ที่รองรับพร้อมเพย์</p></div>' +
+        '<div class="qr-wrap">' +
+          '<canvas id="qr-canvas" width="240" height="240"></canvas>' +
+          '<div class="qr-amount">' + f2.tip.toFixed(0) + ' <span class="baht">บาท</span></div>' +
+          '<div class="qr-caption">PromptPay</div>' +
+        '</div>' +
+        '<div class="summary-card">' +
+          '🎵 <b>' + esc(f2.song) + '</b> — ' + esc(f2.artist) + '<br>' +
+          'จาก: ' + esc(f2.name) +
+          (f2.message.trim() ? '<br>ข้อความ: "' + esc(f2.message) + '"' : '') +
+        '</div>' +
+        '<button class="btn pink" id="confirm-paid">✓ จ่ายเงินแล้ว ส่งคำขอเพลง</button>' +
+        '<div style="height:10px;"></div>' +
+        '<button class="btn secondary" id="back-form">← แก้ไขข้อมูล</button>';
+
+      var canvas = document.getElementById('qr-canvas');
+      try{
+        new QRious({ element: canvas, value: state.payload, size: 240, background:'#F6F8FF', foreground:'#05060F', level:'M' });
+      }catch(e){
+        viewEl.querySelector('.qr-wrap').innerHTML += '<div class="banner">ไม่สามารถสร้าง QR ได้</div>';
+      }
+
+      document.getElementById('back-form').onclick = function(){
+        state.formStep = 'form';
+        render();
+      };
+      document.getElementById('confirm-paid').onclick = async function(){
+        var btn = document.getElementById('confirm-paid');
+        btn.disabled = true;
+        btn.textContent = 'กำลังส่งคำขอ…';
+        var item = {
+          name: f2.name.trim(),
+          song: f2.song.trim(),
+          artist: f2.artist.trim(),
+          message: f2.message.trim(),
+          tip: f2.tip,
+          ts: Date.now()
+        };
+        try{
+          await addRequest(item);
+        }catch(e){
+          console.error('addRequest error:', e);
+        }
+        state.formStep = 'done';
+        render();
+      };
+      return;
+    }
+
+    if (state.formStep === 'done'){
+      viewEl.innerHTML =
+        '<div class="done-screen">' +
+          '<div class="big-emoji">🎉</div>' +
+          '<h2>ส่งคำขอเพลงแล้ว!</h2>' +
+          '<p>ขอบคุณค่ะ/ครับ ทางร้าน/วงจะได้รับคำขอเพลงของคุณแล้ว</p>' +
+          '<button class="btn" id="new-request">ขอเพลงอีกเพลง</button>' +
+        '</div>';
+      document.getElementById('new-request').onclick = function(){
+        state.form = { name:'', song:'', artist:'', message:'', tip:'' };
+        state.payload = null;
+        state.formStep = 'form';
+        render();
+      };
+      return;
+    }
+  }
+
+  function renderStaffLogin(){
+    footerEl.innerHTML = '<a href="#" id="back-customer">← กลับไปหน้าขอเพลง</a>';
+    document.getElementById('back-customer').onclick = function(e){ e.preventDefault(); goCustomer(); };
+
+    viewEl.innerHTML =
+      '<div class="hero"><div class="eyebrow">Staff Access</div><h1>เข้าสู่ระบบเจ้าของร้าน</h1>' +
+      '<p>กรอกรหัส PIN เพื่อดูคิวเพลง</p></div>' +
+      '<div class="field"><label>รหัส PIN</label><input type="password" id="pin-input" inputmode="numeric" placeholder="••••"></div>' +
+      '<div class="hint error" id="pin-error"></div>' +
+      '<button class="btn" id="pin-submit">เข้าสู่ระบบ</button>';
+
+    document.getElementById('pin-submit').onclick = function(){
+      var val = document.getElementById('pin-input').value;
+      if (val === state.settings.pin){
+        state.staffUnlocked = true;
+        state.view = 'staffQueue';
+        startQueueSync();
+        render();
+      } else {
+        document.getElementById('pin-error').textContent = 'รหัส PIN ไม่ถูกต้อง';
+      }
+    };
+  }
+
+  function renderStaffSetup(){
+    footerEl.innerHTML = '<a href="#" id="back-customer">← กลับไปหน้าขอเพลง</a>';
+    document.getElementById('back-customer').onclick = function(e){ e.preventDefault(); goCustomer(); };
+
+    var s = state.settings || { venueName:'', promptpayId:'', pin:'' };
+    viewEl.innerHTML =
+      '<div class="hero"><div class="eyebrow">Staff Setup</div><h1>ตั้งค่าการรับเพลง</h1>' +
+      '<p>ตั้งค่าครั้งแรกสำหรับร้านหรือวงดนตรีของคุณ</p></div>' +
+      '<div class="banner note">ข้อมูลนี้ (รวมถึงคำขอเพลงที่ลูกค้าส่งเข้ามา) จะถูกเก็บใน Firebase Firestore ของคุณเอง — PIN เป็นเพียงการป้องกันเบื้องต้นระดับหน้าเว็บ ควรตั้งค่า Firestore Security Rules เพิ่มเติมถ้าต้องการความปลอดภัยจริงจัง</div>' +
+      '<div class="field"><label>ชื่อร้าน / วงดนตรี</label>' +
+        '<input type="text" id="s-venue" maxlength="40" value="'+esc(s.venueName)+'" placeholder="เช่น The Live Bar"></div>' +
+      '<div class="field"><label>PromptPay ID (เบอร์โทรศัพท์ หรือ เลขบัตรประชาชน)</label>' +
+        '<input type="text" id="s-ppid" maxlength="20" value="'+esc(s.promptpayId)+'" placeholder="เช่น 0812345678">' +
+        '<div class="hint">ใช้สำหรับสร้าง QR รับเงินจากลูกค้า</div></div>' +
+      '<div class="field"><label>ตั้งรหัส PIN (ไม่บังคับ)</label>' +
+        '<input type="password" id="s-pin" inputmode="numeric" maxlength="8" value="'+esc(s.pin)+'" placeholder="เช่น 1234"></div>' +
+      '<div class="hint error" id="setup-error"></div>' +
+      '<button class="btn" id="save-setup">บันทึกการตั้งค่า</button>';
+
+    document.getElementById('save-setup').onclick = async function(){
+      var venueName = document.getElementById('s-venue').value.trim();
+      var promptpayId = document.getElementById('s-ppid').value.trim();
+      var pin = document.getElementById('s-pin').value.trim();
+      var errEl = document.getElementById('setup-error');
+      if (!promptpayId){
+        errEl.textContent = 'กรุณากรอก PromptPay ID';
+        return;
+      }
+      try{
+        formatPromptPayTarget(promptpayId);
+      }catch(e){
+        errEl.textContent = e.message;
+        return;
+      }
+      var newSettings = { venueName: venueName || 'ร้านของฉัน', promptpayId: promptpayId, pin: pin };
+      try{
+        await saveSettings(newSettings);
+      }catch(e){
+        errEl.textContent = 'บันทึกไม่สำเร็จ: ' + e.message + ' (ตรวจสอบ firebaseConfig และ Firestore Rules)';
+        return;
+      }
+      state.settings = newSettings;
+      state.staffUnlocked = true;
+      state.view = 'staffQueue';
+      startQueueSync();
+      render();
+    };
+  }
+
+  function renderStaffQueue(){
+    footerEl.innerHTML = '<a href="#" id="back-customer">← กลับไปหน้าขอเพลง (มุมมองลูกค้า)</a>';
+    document.getElementById('back-customer').onclick = function(e){ e.preventDefault(); goCustomer(); };
+
+    var sorted = state.queue.slice().sort(function(a,b){ return a.ts - b.ts; });
+
+    var html = '<div class="staff-topline">' +
+      '<div class="venue">ร้าน: <b>' + esc(state.settings.venueName) + '</b></div>' +
+      '<button class="link-btn" id="edit-settings">แก้ไขการตั้งค่า</button>' +
+      '</div>' +
+      '<div class="live-dot"><span class="dot"></span>อัปเดตสด — ไม่ต้องรีเฟรช</div>';
+
+    if (sorted.length === 0){
+      html += '<div class="empty-state"><div class="big">🎙️</div>ยังไม่มีคำขอเพลงเข้ามา</div>';
+    } else {
+      html += '<div class="queue-list">' + sorted.map(function(item, idx){
+        return '<div class="ticket">' +
+          '<div class="queue-no">คิวที่ ' + (idx+1) + '</div>' +
+          '<div class="song">' + esc(item.song) + '</div>' +
+          '<div class="artist">' + esc(item.artist) + '</div>' +
+          '<div class="divider"></div>' +
+          '<div class="meta-row"><span>โดย <span class="from">' + esc(item.name) + '</span></span>' +
+          '<span class="tip-badge">💸 ' + item.tip.toFixed(0) + ' บาท</span></div>' +
+          (item.message ? '<div class="msg">"' + esc(item.message) + '"</div>' : '') +
+          '<div class="actions">' +
+            '<button data-id="' + item.id + '">✓ เล่นแล้ว / นำออก</button>' +
+          '</div>' +
+          '<div class="time" style="margin-top:8px;text-align:right;">' + fmtTime(item.ts) + '</div>' +
+        '</div>';
+      }).join('') + '</div>';
+    }
+
+    viewEl.innerHTML = html;
+
+    document.getElementById('edit-settings').onclick = function(){
+      state.view = 'staffSetup';
+      render();
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('.actions button'), function(btn){
+      btn.onclick = async function(){
+        var id = btn.getAttribute('data-id');
+        var updated = state.queue.filter(function(q){ return q.id !== id; });
+        state.queue = updated;
+        render();
+        try{ await deleteRequest(id); }catch(e){ console.error('deleteRequest error:', e); }
+      };
+    });
+  }
+
+  // ---------- navigation ----------
+  function goCustomer(){
+    stopQueueSync();
+    window.location.hash = '';
+    state.view = 'customer';
+    render();
+  }
+  function goStaff(){
+    window.location.hash = 'staff';
+    if (!state.settings || !state.settings.promptpayId){
+      state.view = 'staffSetup';
+    } else if (state.staffUnlocked || !state.settings.pin){
+      state.view = 'staffQueue';
+      startQueueSync();
+    } else {
+      state.view = 'staffLogin';
+    }
+    render();
+  }
+
+  function startQueueSync(){
+    stopQueueSync();
+    state.unsub = subscribeRequests(function(list){
+      state.queue = list;
+      if (state.view === 'staffQueue') render();
+    });
+  }
+  function stopQueueSync(){
+    if (state.unsub){ state.unsub(); state.unsub = null; }
+  }
+
+  window.addEventListener('hashchange', function(){
+    if (window.location.hash === '#staff'){
+      goStaff();
+    } else {
+      goCustomer();
+    }
+  });
+
+  // ---------- init ----------
+  (async function init(){
+    state.settings = await loadSettings();
+    if (window.location.hash === '#staff'){
+      goStaff();
+    } else {
+      state.view = 'customer';
+      render();
+    }
+  })();
+</script>
+</body>
+</html>
