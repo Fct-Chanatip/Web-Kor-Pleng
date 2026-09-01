@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>ขอเพลง 🎶</title>
+<title>Web Kor Pleng🎶</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <style>
   :root{
@@ -241,7 +241,7 @@
   <div class="topbar">
     <div class="brand">
       <div class="eyebrow">Live Song Request</div>
-      <div class="name" id="brand-name"><span class="emoji">🎶</span>ขอเพลง</div>
+      <div class="name" id="brand-name"><span class="emoji">🎶</span>Web Kor Pleng</div>
     </div>
   </div>
   <main id="view"></main>
@@ -553,9 +553,9 @@
     document.getElementById('back-customer').onclick = function(e){ e.preventDefault(); goCustomer(); };
 
     viewEl.innerHTML =
-      '<div class="hero"><div class="eyebrow">Staff Access</div><h1>เข้าสู่ระบบเจ้าของร้าน</h1>' +
-      '<p>เข้าสู่ระบบด้วยอีเมล/รหัสผ่านที่สร้างไว้ใน Firebase Authentication</p></div>' +
-      '<div class="field"><label>อีเมล</label><input type="text" id="login-email" placeholder="you@example.com"></div>' +
+      '<div class="hero"><div class="eyebrow">Staff Access</div><h1>เข้าสู่ระบบเจ้าของร้าน / วงดนตรี</h1>' +
+      '<p>เข้าสู่ระบบด้วยอีเมล/รหัสผ่าน</p></div>' + //เข้าสู่ระบบด้วยอีเมล/รหัสผ่านที่สร้างไว้ใน Firebase Authentication
+      '<div class="field"><label>อีเมล</label><input type="text" id="login-email" placeholder="you@gmail.com"></div>' +
       '<div class="field"><label>รหัสผ่าน</label><input type="password" id="login-pass" placeholder="••••••••"></div>' +
       '<div class="hint error" id="login-error"></div>' +
       '<button class="btn" id="login-submit">เข้าสู่ระบบ</button>';
@@ -568,6 +568,7 @@
       var pass = document.getElementById('login-pass').value;
       if (!email || !pass){
         errEl.textContent = 'กรอกอีเมลและรหัสผ่านให้ครบ';
+        errEl.className = 'error';
         return;
       }
       btn.disabled = true;
@@ -579,6 +580,7 @@
         btn.disabled = false;
         btn.textContent = 'เข้าสู่ระบบ';
         errEl.textContent = 'เข้าสู่ระบบไม่สำเร็จ: อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+        errEl.className = 'error';
       }
     };
   }
