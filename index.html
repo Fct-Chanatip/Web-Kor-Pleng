@@ -187,6 +187,30 @@
   }
   .empty-state .big{font-size:34px;margin-bottom:10px;}
 
+  .section-label{
+    font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);font-weight:700;margin:0 0 12px;
+  }
+  .pending-list{display:flex;flex-direction:column;gap:12px;margin-bottom:28px;}
+  .pending-card{
+    background:var(--surface-2);
+    border:1px solid rgba(245,203,46,0.35);
+    border-radius:12px;
+    padding:14px 16px;
+  }
+  .pending-card .top-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .pending-card .song-mini{font-size:15.5px;font-weight:700;}
+  .pending-card .artist-mini{font-size:12.5px;color:var(--muted);}
+  .pending-card .amount-big{font-size:22px;font-weight:800;color:var(--gold);white-space:nowrap;}
+  .pending-card .from-mini{font-size:12.5px;color:var(--muted);margin-top:4px;}
+  .pending-card .pending-actions{display:flex;gap:8px;margin-top:12px;}
+  .pending-card .pending-actions button{
+    flex:1;padding:9px;border-radius:9px;font-size:12.5px;font-weight:700;
+    border:1px solid var(--border);cursor:pointer;
+  }
+  .pending-card .btn-confirm{background:var(--gold);color:#1a1409;border-color:var(--gold);}
+  .pending-card .btn-reject{background:transparent;color:var(--red);border-color:rgba(229,72,77,0.4);}
+
   .staff-topline{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
   .staff-topline .venue{font-size:13px;color:var(--muted);}
   .staff-topline .venue b{color:var(--text);}
@@ -234,9 +258,12 @@
   // ============================================================
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
   import {
-    getFirestore, doc, getDoc, setDoc,
+    getFirestore, doc, getDoc, setDoc, updateDoc,
     collection, addDoc, deleteDoc, onSnapshot, query, orderBy
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+  import {
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCExL6ehKWPssFz7-TNk8vHnqdiaPaFsVY",
@@ -251,6 +278,7 @@
 
   const fbApp = initializeApp(firebaseConfig);
   const db = getFirestore(fbApp);
+  const auth = getAuth(fbApp);
 
   // ---------- Firestore helpers ----------
   async function loadSettings(){
@@ -267,6 +295,9 @@
   }
   async function deleteRequest(id){
     await deleteDoc(doc(db, 'requests', id));
+  }
+  async function confirmRequestPaid(id){
+    await updateDoc(doc(db, 'requests', id), { status: 'confirmed' });
   }
   function subscribeRequests(callback){
     const q = query(collection(db, 'requests'), orderBy('ts', 'asc'));
@@ -485,7 +516,8 @@
           artist: f2.artist.trim(),
           message: f2.message.trim(),
           tip: f2.tip,
-          ts: Date.now()
+          ts: Date.now(),
+          status: 'pending'
         };
         try{
           await addRequest(item);
@@ -503,7 +535,7 @@
         '<div class="done-screen">' +
           '<div class="big-emoji">🎉</div>' +
           '<h2>ส่งคำขอเพลงแล้ว!</h2>' +
-          '<p>ขอบคุณค่ะ/ครับ ทางร้าน/วงจะได้รับคำขอเพลงของคุณแล้ว</p>' +
+          '<p>ขอบคุณค่ะ/ครับ ทางร้าน/วงจะตรวจสอบยอดโอนแล้วนำเพลงของคุณเข้าคิวเร็วๆ นี้</p>' +
           '<button class="btn" id="new-request">ขอเพลงอีกเพลง</button>' +
         '</div>';
       document.getElementById('new-request').onclick = function(){
@@ -522,20 +554,31 @@
 
     viewEl.innerHTML =
       '<div class="hero"><div class="eyebrow">Staff Access</div><h1>เข้าสู่ระบบเจ้าของร้าน</h1>' +
-      '<p>กรอกรหัส PIN เพื่อดูคิวเพลง</p></div>' +
-      '<div class="field"><label>รหัส PIN</label><input type="password" id="pin-input" inputmode="numeric" placeholder="••••"></div>' +
-      '<div class="hint error" id="pin-error"></div>' +
-      '<button class="btn" id="pin-submit">เข้าสู่ระบบ</button>';
+      '<p>เข้าสู่ระบบด้วยอีเมล/รหัสผ่านที่สร้างไว้ใน Firebase Authentication</p></div>' +
+      '<div class="field"><label>อีเมล</label><input type="text" id="login-email" placeholder="you@example.com"></div>' +
+      '<div class="field"><label>รหัสผ่าน</label><input type="password" id="login-pass" placeholder="••••••••"></div>' +
+      '<div class="hint error" id="login-error"></div>' +
+      '<button class="btn" id="login-submit">เข้าสู่ระบบ</button>';
 
-    document.getElementById('pin-submit').onclick = function(){
-      var val = document.getElementById('pin-input').value;
-      if (val === state.settings.pin){
-        state.staffUnlocked = true;
-        state.view = 'staffQueue';
-        startQueueSync();
-        render();
-      } else {
-        document.getElementById('pin-error').textContent = 'รหัส PIN ไม่ถูกต้อง';
+    document.getElementById('login-submit').onclick = async function(){
+      var btn = document.getElementById('login-submit');
+      var errEl = document.getElementById('login-error');
+      errEl.textContent = '';
+      var email = document.getElementById('login-email').value.trim();
+      var pass = document.getElementById('login-pass').value;
+      if (!email || !pass){
+        errEl.textContent = 'กรอกอีเมลและรหัสผ่านให้ครบ';
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = 'กำลังเข้าสู่ระบบ…';
+      try{
+        await signInWithEmailAndPassword(auth, email, pass);
+        // onAuthStateChanged จะพาไปหน้าคิวให้เอง
+      }catch(e){
+        btn.disabled = false;
+        btn.textContent = 'เข้าสู่ระบบ';
+        errEl.textContent = 'เข้าสู่ระบบไม่สำเร็จ: อีเมลหรือรหัสผ่านไม่ถูกต้อง';
       }
     };
   }
@@ -544,25 +587,22 @@
     footerEl.innerHTML = '<a href="#" id="back-customer">← กลับไปหน้าขอเพลง</a>';
     document.getElementById('back-customer').onclick = function(e){ e.preventDefault(); goCustomer(); };
 
-    var s = state.settings || { venueName:'', promptpayId:'', pin:'' };
+    var s = state.settings || { venueName:'', promptpayId:'' };
     viewEl.innerHTML =
       '<div class="hero"><div class="eyebrow">Staff Setup</div><h1>ตั้งค่าการรับเพลง</h1>' +
       '<p>ตั้งค่าครั้งแรกสำหรับร้านหรือวงดนตรีของคุณ</p></div>' +
-      '<div class="banner note">ข้อมูลนี้ (รวมถึงคำขอเพลงที่ลูกค้าส่งเข้ามา) จะถูกเก็บใน Firebase Firestore ของคุณเอง — PIN เป็นเพียงการป้องกันเบื้องต้นระดับหน้าเว็บ ควรตั้งค่า Firestore Security Rules เพิ่มเติมถ้าต้องการความปลอดภัยจริงจัง</div>' +
+      '<div class="banner note">ข้อมูลนี้ (รวมถึงคำขอเพลงที่ลูกค้าส่งเข้ามา) จะถูกเก็บใน Firebase Firestore ของคุณเอง การเข้าถึงหน้านี้และคิวเพลงต้อง<strong>ล็อกอินด้วยบัญชี Firebase Authentication</strong> — ถ้ายังไม่มีบัญชี ให้ไปสร้างที่ Firebase Console → Authentication → Users → Add user ก่อน</div>' +
       '<div class="field"><label>ชื่อร้าน / วงดนตรี</label>' +
         '<input type="text" id="s-venue" maxlength="40" value="'+esc(s.venueName)+'" placeholder="เช่น The Live Bar"></div>' +
       '<div class="field"><label>PromptPay ID (เบอร์โทรศัพท์ หรือ เลขบัตรประชาชน)</label>' +
         '<input type="text" id="s-ppid" maxlength="20" value="'+esc(s.promptpayId)+'" placeholder="เช่น 0812345678">' +
         '<div class="hint">ใช้สำหรับสร้าง QR รับเงินจากลูกค้า</div></div>' +
-      '<div class="field"><label>ตั้งรหัส PIN (ไม่บังคับ)</label>' +
-        '<input type="password" id="s-pin" inputmode="numeric" maxlength="8" value="'+esc(s.pin)+'" placeholder="เช่น 1234"></div>' +
       '<div class="hint error" id="setup-error"></div>' +
       '<button class="btn" id="save-setup">บันทึกการตั้งค่า</button>';
 
     document.getElementById('save-setup').onclick = async function(){
       var venueName = document.getElementById('s-venue').value.trim();
       var promptpayId = document.getElementById('s-ppid').value.trim();
-      var pin = document.getElementById('s-pin').value.trim();
       var errEl = document.getElementById('setup-error');
       if (!promptpayId){
         errEl.textContent = 'กรุณากรอก PromptPay ID';
@@ -574,15 +614,14 @@
         errEl.textContent = e.message;
         return;
       }
-      var newSettings = { venueName: venueName || 'ร้านของฉัน', promptpayId: promptpayId, pin: pin };
+      var newSettings = { venueName: venueName || 'ร้านของฉัน', promptpayId: promptpayId };
       try{
         await saveSettings(newSettings);
       }catch(e){
-        errEl.textContent = 'บันทึกไม่สำเร็จ: ' + e.message + ' (ตรวจสอบ firebaseConfig และ Firestore Rules)';
+        errEl.textContent = 'บันทึกไม่สำเร็จ: ' + e.message + ' (ตรวจสอบว่าล็อกอินอยู่ และตรวจสอบ Firestore Rules)';
         return;
       }
       state.settings = newSettings;
-      state.staffUnlocked = true;
       state.view = 'staffQueue';
       startQueueSync();
       render();
@@ -590,10 +629,16 @@
   }
 
   function renderStaffQueue(){
-    footerEl.innerHTML = '<a href="#" id="back-customer">← กลับไปหน้าขอเพลง (มุมมองลูกค้า)</a>';
+    footerEl.innerHTML = '<a href="#" id="back-customer">← กลับไปหน้าขอเพลง (มุมมองลูกค้า)</a> &nbsp;·&nbsp; <a href="#" id="sign-out-link">ออกจากระบบ</a>';
     document.getElementById('back-customer').onclick = function(e){ e.preventDefault(); goCustomer(); };
+    document.getElementById('sign-out-link').onclick = async function(e){
+      e.preventDefault();
+      try{ await signOut(auth); }catch(err){ console.error('signOut error:', err); }
+    };
 
-    var sorted = state.queue.slice().sort(function(a,b){ return a.ts - b.ts; });
+    var all = state.queue.slice().sort(function(a,b){ return a.ts - b.ts; });
+    var pending = all.filter(function(q){ return q.status !== 'confirmed'; });
+    var confirmed = all.filter(function(q){ return q.status === 'confirmed'; });
 
     var html = '<div class="staff-topline">' +
       '<div class="venue">ร้าน: <b>' + esc(state.settings.venueName) + '</b></div>' +
@@ -601,10 +646,27 @@
       '</div>' +
       '<div class="live-dot"><span class="dot"></span>อัปเดตสด — ไม่ต้องรีเฟรช</div>';
 
-    if (sorted.length === 0){
-      html += '<div class="empty-state"><div class="big">🎙️</div>ยังไม่มีคำขอเพลงเข้ามา</div>';
-    } else {
-      html += '<div class="queue-list">' + sorted.map(function(item, idx){
+    if (pending.length > 0){
+      html += '<div class="section-label">🔎 รอตรวจสอบยอดโอน (' + pending.length + ')</div>' +
+        '<div class="pending-list">' + pending.map(function(item){
+          return '<div class="pending-card">' +
+            '<div class="top-row">' +
+              '<div><div class="song-mini">' + esc(item.song) + '</div>' +
+              '<div class="artist-mini">' + esc(item.artist) + ' · โดย ' + esc(item.name) + '</div></div>' +
+              '<div class="amount-big">' + item.tip.toFixed(0) + ' ฿</div>' +
+            '</div>' +
+            '<div class="from-mini">ส่งเมื่อ ' + fmtTime(item.ts) + ' — เช็คแอปธนาคารว่ามียอด ' + item.tip.toFixed(0) + ' บาทเข้ามาไหม</div>' +
+            '<div class="pending-actions">' +
+              '<button class="btn-confirm" data-confirm-id="' + item.id + '">✓ ยืนยันได้รับเงินแล้ว</button>' +
+              '<button class="btn-reject" data-reject-id="' + item.id + '">✕ ไม่ได้โอน / ลบ</button>' +
+            '</div>' +
+          '</div>';
+        }).join('') + '</div>';
+    }
+
+    if (confirmed.length > 0){
+      html += '<div class="section-label">🎫 คิวเพลง (ยืนยันเงินแล้ว)</div>';
+      html += '<div class="queue-list">' + confirmed.map(function(item, idx){
         return '<div class="ticket">' +
           '<div class="queue-no">คิวที่ ' + (idx+1) + '</div>' +
           '<div class="song">' + esc(item.song) + '</div>' +
@@ -621,12 +683,32 @@
       }).join('') + '</div>';
     }
 
+    if (pending.length === 0 && confirmed.length === 0){
+      html += '<div class="empty-state"><div class="big">🎙️</div>ยังไม่มีคำขอเพลงเข้ามา</div>';
+    }
+
     viewEl.innerHTML = html;
 
     document.getElementById('edit-settings').onclick = function(){
       state.view = 'staffSetup';
       render();
     };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-confirm-id]'), function(btn){
+      btn.onclick = async function(){
+        var id = btn.getAttribute('data-confirm-id');
+        state.queue = state.queue.map(function(q){ return q.id === id ? Object.assign({}, q, {status:'confirmed'}) : q; });
+        render();
+        try{ await confirmRequestPaid(id); }catch(e){ console.error('confirmRequestPaid error:', e); }
+      };
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-reject-id]'), function(btn){
+      btn.onclick = async function(){
+        var id = btn.getAttribute('data-reject-id');
+        state.queue = state.queue.filter(function(q){ return q.id !== id; });
+        render();
+        try{ await deleteRequest(id); }catch(e){ console.error('deleteRequest error:', e); }
+      };
+    });
     Array.prototype.forEach.call(document.querySelectorAll('.actions button'), function(btn){
       btn.onclick = async function(){
         var id = btn.getAttribute('data-id');
@@ -647,13 +729,13 @@
   }
   function goStaff(){
     window.location.hash = 'staff';
-    if (!state.settings || !state.settings.promptpayId){
+    if (!auth.currentUser){
+      state.view = 'staffLogin';
+    } else if (!state.settings || !state.settings.promptpayId){
       state.view = 'staffSetup';
-    } else if (state.staffUnlocked || !state.settings.pin){
+    } else {
       state.view = 'staffQueue';
       startQueueSync();
-    } else {
-      state.view = 'staffLogin';
     }
     render();
   }
@@ -674,6 +756,22 @@
       goStaff();
     } else {
       goCustomer();
+    }
+  });
+
+  onAuthStateChanged(auth, function(user){
+    if (user && window.location.hash === '#staff'){
+      if (state.settings && state.settings.promptpayId){
+        state.view = 'staffQueue';
+        startQueueSync();
+      } else {
+        state.view = 'staffSetup';
+      }
+      render();
+    } else if (!user && (state.view === 'staffQueue' || state.view === 'staffSetup')){
+      stopQueueSync();
+      state.view = 'staffLogin';
+      render();
     }
   });
 
