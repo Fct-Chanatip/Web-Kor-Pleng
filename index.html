@@ -169,7 +169,7 @@
   .ticket .meta-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;color:var(--muted);}
   .ticket .from{color:var(--text);font-weight:600;}
   .ticket .tip-badge{
-    background:rgba(229,72,77,0.14);color:var(--red);
+    background:rgba(72, 229, 169, 0.14);color:var(--good);
     font-weight:800;padding:4px 10px;border-radius:999px;font-size:12.5px;white-space:nowrap;
   }
   .ticket .msg{font-size:13px;color:var(--muted);font-style:italic;margin-top:10px;line-height:1.5;}
@@ -568,7 +568,6 @@
       var pass = document.getElementById('login-pass').value;
       if (!email || !pass){
         errEl.textContent = 'กรอกอีเมลและรหัสผ่านให้ครบ';
-        errEl.className = 'error';
         return;
       }
       btn.disabled = true;
@@ -580,7 +579,6 @@
         btn.disabled = false;
         btn.textContent = 'เข้าสู่ระบบ';
         errEl.textContent = 'เข้าสู่ระบบไม่สำเร็จ: อีเมลหรือรหัสผ่านไม่ถูกต้อง';
-        errEl.className = 'error';
       }
     };
   }
@@ -654,10 +652,10 @@
           return '<div class="pending-card">' +
             '<div class="top-row">' +
               '<div><div class="song-mini">' + esc(item.song) + '</div>' +
-              '<div class="artist-mini">' + esc(item.artist) + ' · โดย ' + esc(item.name) + '</div></div>' +
+              '<div class="artist-mini">' + esc(item.artist) + '</div></div>' +
               '<div class="amount-big">' + item.tip.toFixed(0) + ' ฿</div>' +
             '</div>' +
-            '<div class="from-mini">ส่งเมื่อ ' + fmtTime(item.ts) + ' — เช็คแอปธนาคารว่ามียอด ' + item.tip.toFixed(0) + ' บาทเข้ามาไหม</div>' +
+            '<div class="from-mini">' + 'โดย ' + esc(item.name) + ' ส่งเมื่อ' + fmtTime(item.ts) + ' — เช็คแอปธนาคารว่ามียอด ' + item.tip.toFixed(0) + ' บาทเข้ามาไหม</div>' +
             '<div class="pending-actions">' +
               '<button class="btn-confirm" data-confirm-id="' + item.id + '">✓ ยืนยันได้รับเงินแล้ว</button>' +
               '<button class="btn-reject" data-reject-id="' + item.id + '">✕ ไม่ได้โอน / ลบ</button>' +
