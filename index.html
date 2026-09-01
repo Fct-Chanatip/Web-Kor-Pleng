@@ -187,6 +187,30 @@
   }
   .empty-state .big{font-size:34px;margin-bottom:10px;}
 
+  .section-label{
+    font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);font-weight:700;margin:0 0 12px;
+  }
+  .pending-list{display:flex;flex-direction:column;gap:12px;margin-bottom:28px;}
+  .pending-card{
+    background:var(--surface-2);
+    border:1px solid rgba(245,203,46,0.35);
+    border-radius:12px;
+    padding:14px 16px;
+  }
+  .pending-card .top-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .pending-card .song-mini{font-size:15.5px;font-weight:700;}
+  .pending-card .artist-mini{font-size:12.5px;color:var(--muted);}
+  .pending-card .amount-big{font-size:22px;font-weight:800;color:var(--gold);white-space:nowrap;}
+  .pending-card .from-mini{font-size:12.5px;color:var(--muted);margin-top:4px;}
+  .pending-card .pending-actions{display:flex;gap:8px;margin-top:12px;}
+  .pending-card .pending-actions button{
+    flex:1;padding:9px;border-radius:9px;font-size:12.5px;font-weight:700;
+    border:1px solid var(--border);cursor:pointer;
+  }
+  .pending-card .btn-confirm{background:var(--gold);color:#1a1409;border-color:var(--gold);}
+  .pending-card .btn-reject{background:transparent;color:var(--red);border-color:rgba(229,72,77,0.4);}
+
   .staff-topline{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
   .staff-topline .venue{font-size:13px;color:var(--muted);}
   .staff-topline .venue b{color:var(--text);}
@@ -234,19 +258,17 @@
   // ============================================================
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
   import {
-    getFirestore, doc, getDoc, setDoc,
+    getFirestore, doc, getDoc, setDoc, updateDoc,
     collection, addDoc, deleteDoc, onSnapshot, query, orderBy
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyCExL6ehKWPssFz7-TNk8vHnqdiaPaFsVY",
-    authDomain: "web-kor-pleng.firebaseapp.com",
-    databaseURL: "https://web-kor-pleng-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "web-kor-pleng",
-    storageBucket: "web-kor-pleng.firebasestorage.app",
-    messagingSenderId: "1036905898881",
-    appId: "1:1036905898881:web:2715741ac4da2504eafe80",
-    measurementId: "G-83L88NW09D"
+    apiKey: "วางค่าจาก Firebase ของคุณที่นี่",
+    authDomain: "your-project-id.firebaseapp.com",
+    projectId: "your-project-id",
+    storageBucket: "your-project-id.appspot.com",
+    messagingSenderId: "000000000000",
+    appId: "1:000000000000:web:xxxxxxxxxxxxxxxxxxxxxx"
   };
 
   const fbApp = initializeApp(firebaseConfig);
@@ -267,6 +289,9 @@
   }
   async function deleteRequest(id){
     await deleteDoc(doc(db, 'requests', id));
+  }
+  async function confirmRequestPaid(id){
+    await updateDoc(doc(db, 'requests', id), { status: 'confirmed' });
   }
   function subscribeRequests(callback){
     const q = query(collection(db, 'requests'), orderBy('ts', 'asc'));
@@ -387,11 +412,11 @@
           '<p>กรอกข้อมูล ระบุจำนวนทิป แล้วสแกนจ่ายผ่าน PromptPay</p>' +
         '</div>' +
         '<div class="field"><label>1. ชื่อคุณ</label>' +
-          '<input type="text" id="f-name" maxlength="40" value="'+esc(f.name)+'" placeholder="เช่น เก้า, คุณเก้า"></div>' +
+          '<input type="text" id="f-name" maxlength="40" value="'+esc(f.name)+'" placeholder="เช่น ปลา, คุณเอ"></div>' +
         '<div class="field"><label>2. ชื่อเพลง</label>' +
-          '<input type="text" id="f-song" maxlength="80" value="'+esc(f.song)+'" placeholder="เช่น โตกว่านี้"></div>' +
+          '<input type="text" id="f-song" maxlength="80" value="'+esc(f.song)+'" placeholder="เช่น คนที่คุณก็รู้ว่าใคร"></div>' +
         '<div class="field"><label>3. ศิลปิน</label>' +
-          '<input type="text" id="f-artist" maxlength="60" value="'+esc(f.artist)+'" placeholder="เช่น GOODMOOD"></div>' +
+          '<input type="text" id="f-artist" maxlength="60" value="'+esc(f.artist)+'" placeholder="เช่น พาราด็อกซ์"></div>' +
         '<div class="field"><label>4. ข้อความถึงนักดนตรี (ถ้ามี)</label>' +
           '<textarea id="f-message" maxlength="200" placeholder="อยากบอกอะไรกับนักดนตรีไหม?">'+esc(f.message)+'</textarea></div>' +
         '<div class="field"><label>5. จำนวนทิป (ขั้นต่ำ 5 บาท)</label>' +
@@ -485,7 +510,8 @@
           artist: f2.artist.trim(),
           message: f2.message.trim(),
           tip: f2.tip,
-          ts: Date.now()
+          ts: Date.now(),
+          status: 'pending'
         };
         try{
           await addRequest(item);
@@ -503,7 +529,7 @@
         '<div class="done-screen">' +
           '<div class="big-emoji">🎉</div>' +
           '<h2>ส่งคำขอเพลงแล้ว!</h2>' +
-          '<p>ขอบคุณค่ะ/ครับ ทางร้าน/วงจะได้รับคำขอเพลงของคุณแล้ว</p>' +
+          '<p>ขอบคุณค่ะ/ครับ ทางร้าน/วงจะตรวจสอบยอดโอนแล้วนำเพลงของคุณเข้าคิวเร็วๆ นี้</p>' +
           '<button class="btn" id="new-request">ขอเพลงอีกเพลง</button>' +
         '</div>';
       document.getElementById('new-request').onclick = function(){
@@ -593,7 +619,9 @@
     footerEl.innerHTML = '<a href="#" id="back-customer">← กลับไปหน้าขอเพลง (มุมมองลูกค้า)</a>';
     document.getElementById('back-customer').onclick = function(e){ e.preventDefault(); goCustomer(); };
 
-    var sorted = state.queue.slice().sort(function(a,b){ return a.ts - b.ts; });
+    var all = state.queue.slice().sort(function(a,b){ return a.ts - b.ts; });
+    var pending = all.filter(function(q){ return q.status !== 'confirmed'; });
+    var confirmed = all.filter(function(q){ return q.status === 'confirmed'; });
 
     var html = '<div class="staff-topline">' +
       '<div class="venue">ร้าน: <b>' + esc(state.settings.venueName) + '</b></div>' +
@@ -601,10 +629,27 @@
       '</div>' +
       '<div class="live-dot"><span class="dot"></span>อัปเดตสด — ไม่ต้องรีเฟรช</div>';
 
-    if (sorted.length === 0){
-      html += '<div class="empty-state"><div class="big">🎙️</div>ยังไม่มีคำขอเพลงเข้ามา</div>';
-    } else {
-      html += '<div class="queue-list">' + sorted.map(function(item, idx){
+    if (pending.length > 0){
+      html += '<div class="section-label">🔎 รอตรวจสอบยอดโอน (' + pending.length + ')</div>' +
+        '<div class="pending-list">' + pending.map(function(item){
+          return '<div class="pending-card">' +
+            '<div class="top-row">' +
+              '<div><div class="song-mini">' + esc(item.song) + '</div>' +
+              '<div class="artist-mini">' + esc(item.artist) + ' · โดย ' + esc(item.name) + '</div></div>' +
+              '<div class="amount-big">' + item.tip.toFixed(0) + ' ฿</div>' +
+            '</div>' +
+            '<div class="from-mini">ส่งเมื่อ ' + fmtTime(item.ts) + ' — เช็คแอปธนาคารว่ามียอด ' + item.tip.toFixed(0) + ' บาทเข้ามาไหม</div>' +
+            '<div class="pending-actions">' +
+              '<button class="btn-confirm" data-confirm-id="' + item.id + '">✓ ยืนยันได้รับเงินแล้ว</button>' +
+              '<button class="btn-reject" data-reject-id="' + item.id + '">✕ ไม่ได้โอน / ลบ</button>' +
+            '</div>' +
+          '</div>';
+        }).join('') + '</div>';
+    }
+
+    if (confirmed.length > 0){
+      html += '<div class="section-label">🎫 คิวเพลง (ยืนยันเงินแล้ว)</div>';
+      html += '<div class="queue-list">' + confirmed.map(function(item, idx){
         return '<div class="ticket">' +
           '<div class="queue-no">คิวที่ ' + (idx+1) + '</div>' +
           '<div class="song">' + esc(item.song) + '</div>' +
@@ -621,12 +666,32 @@
       }).join('') + '</div>';
     }
 
+    if (pending.length === 0 && confirmed.length === 0){
+      html += '<div class="empty-state"><div class="big">🎙️</div>ยังไม่มีคำขอเพลงเข้ามา</div>';
+    }
+
     viewEl.innerHTML = html;
 
     document.getElementById('edit-settings').onclick = function(){
       state.view = 'staffSetup';
       render();
     };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-confirm-id]'), function(btn){
+      btn.onclick = async function(){
+        var id = btn.getAttribute('data-confirm-id');
+        state.queue = state.queue.map(function(q){ return q.id === id ? Object.assign({}, q, {status:'confirmed'}) : q; });
+        render();
+        try{ await confirmRequestPaid(id); }catch(e){ console.error('confirmRequestPaid error:', e); }
+      };
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-reject-id]'), function(btn){
+      btn.onclick = async function(){
+        var id = btn.getAttribute('data-reject-id');
+        state.queue = state.queue.filter(function(q){ return q.id !== id; });
+        render();
+        try{ await deleteRequest(id); }catch(e){ console.error('deleteRequest error:', e); }
+      };
+    });
     Array.prototype.forEach.call(document.querySelectorAll('.actions button'), function(btn){
       btn.onclick = async function(){
         var id = btn.getAttribute('data-id');
